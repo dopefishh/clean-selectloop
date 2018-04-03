@@ -33,6 +33,3 @@ If you want to build with `cpm`, run `make prj` followed by `cpm make` in the ex
 - Wget
 
 	Implements a simple http file downloader
-- IRC
-
-	Implements a simple IRC bot interface (todo)
