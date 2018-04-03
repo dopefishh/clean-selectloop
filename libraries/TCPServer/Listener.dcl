@@ -2,21 +2,21 @@ definition module TCPServer.Listener
 
 from StdOverloaded import class ==
 from Data.Maybe import :: Maybe
-from Data.Error import :: MaybeError, :: MaybeErrorString
 
-listen :: Int (ListenerHandlers ci st) st !*World -> *(MaybeErrorString st, !*World) | == ci
-
-:: ListenerHandlers ci st =
-	{ idleTimeout     :: Maybe Int
-	, sendTimeout     :: Maybe Int
-	, connectTimeout  :: Maybe Int
-	, onInit          ::               st *World -> *(                  *(ListenerResponse st ci), !*World)
-	, onConnect       :: String Int    st *World -> *(Maybe String, ci, *(ListenerResponse st ci), !*World)
-	, onData          :: String     ci st *World -> *(Maybe String, ci, *(ListenerResponse st ci), !*World)
-	, onTick          ::               st *World -> *(                  *(ListenerResponse st ci), !*World)
-	, onClientClose   ::            ci st *World -> *(                  *(ListenerResponse st ci), !*World)
-	, onClose         ::               st *World -> *(st, !*World)
-	}
+listen ::
+	Int //port
+	(Maybe Int) //idleTimeout
+	(Maybe Int) //sendTimeout
+	(Maybe Int) //connectTimeout
+	(.st -> .(*World -> *(*(ListenerResponse .st ci), !*World))) // onInit
+	(String Int -> .(.st -> .(*World -> *(Maybe String, ci, *(ListenerResponse .st ci), !*World)))) // onConnect
+	(String ci -> .(.st -> .(*World -> *(Maybe String, ci, *(ListenerResponse .st ci), !*World)))) // onData
+	(.st -> .(*World -> *(*(ListenerResponse .st ci), !*World))) // onTick
+	(ci -> .(.st -> .(*World -> *(*(ListenerResponse .st ci), !*World)))) // onClientClose
+	(.st -> .(*World -> *(.st, !*World))) //onClose
+	.st //initial state
+	!*World
+	-> *(Maybe String, .st, !*World) | == ci
 
 :: *ListenerResponse st ci =
 	{ globalState     :: st
@@ -26,4 +26,3 @@ listen :: Int (ListenerHandlers ci st) st !*World -> *(MaybeErrorString st, !*Wo
 	}
 
 listenerResponse :: st -> ListenerResponse st ci
-emptyListener :: ListenerHandlers ci st
