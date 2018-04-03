@@ -1,7 +1,7 @@
 definition module TCPServer
 
 from StdOverloaded import class ==
-from StdMaybe import :: Maybe
+from Data.Maybe import :: Maybe
 
 from System.Time import :: Timespec
 
