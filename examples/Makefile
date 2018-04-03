@@ -4,6 +4,8 @@ CLEAN_HOME?=/opt/clean
 
 all: $(binaries)
 
+prj: $(addsuffix .prj,$(binaries))
+
 %: %.icl
 	clm -IL Platform -IL TCPIP -IL Platform/Deprecated/StdLib -I ../libraries -h 200m -s 200m $@ -o $@
 
@@ -15,3 +17,6 @@ all: $(binaries)
 
 clean:
 	$(RM) -r $(binaries) Clean\ System\ Files *-sapl *-www
+
+clobber: clean
+	$(RM) *.prj

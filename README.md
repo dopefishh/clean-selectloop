@@ -20,6 +20,9 @@ Write network applications in a reactive way in clean
 	`HTTPRequest`.
 
 ### Examples
+To build the examples there are two options.
+If you want to build with `clm`, just run `make` in the examples directory.
+If you want to build with `cpm`, run `make prj` followed by `cpm make` in the examples directory.
 
 - Daytime
 
