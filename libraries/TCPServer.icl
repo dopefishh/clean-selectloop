@@ -11,8 +11,6 @@ import TCPIP
 import Data.Error
 import Data.List
 
-DEBUG :== True
-
 handlerResponse :: .st -> *(HandlerResponse ci .st)
 handlerResponse s =
 	{ globalState   = s  , newConnection   = []
@@ -43,7 +41,6 @@ msToTimespec m = {tv_sec=m/1000,tv_nsec=(m rem 1000)*1000000}
 selectList :: .Int u:[.a] -> (.a,v:[.a]), [u <= v]
 selectList n l = let (left, [el:right]) = splitAt n l in (el, left++right)
 
-//selectListMultiple :: (.a -> (Bool, *a)) [.a]
 selectListMultiple :: (.a -> (.Bool,.b)) ![.a] -> ([.b],[.b])
 selectListMultiple p [] = ([], [])
 selectListMultiple p [x:xs]
@@ -65,14 +62,6 @@ serve server s w
 tous :: Timespec -> Int
 tous {tv_sec,tv_nsec} = tv_sec*1000000+tv_nsec/1000
 
-//loop ::
-//	!(Server ci .st)
-//	*[*(TCP_Listener, Int)]
-//	*[*(TCP_SChannel, TCP_RChannel, ci)]
-//	.st
-//	Int
-//	!*World
-//	-> *(Maybe String, .st, !*World) | == ci
 loop server listeners channels s lastOnTick w
 # (ts, w) = appFst tous $ nsTime w
 //Do the select
@@ -148,14 +137,6 @@ seqListError [x:xs] s = case x s of
 		(Ok as, s) = (Ok [a:as], s)
 		(Error e, s) = (Error e, s)
 
-//cont ::
-//	(Server ci .st)
-//	*[*(TCP_Listener, Int)]
-//	*[*(TCP_SChannel, TCP_RChannel, ci)]
-//	!*(HandlerResponse ci .st)
-//	Int
-//	!*World
-//	-> *(Maybe String, .st, !*World) | == ci
 //Add listener
 cont server listeners channels response=:{newListener=[port:ls],globalState} lastOnTick w
 //	| not (trace_tn ("add listener: " +++ toString port)) = undef
