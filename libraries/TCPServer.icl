@@ -13,7 +13,7 @@ import Data.List
 
 DEBUG :== True
 
-handlerResponse :: .st -> *(HandlerResponse .st ci)
+handlerResponse :: .st -> *(HandlerResponse ci .st)
 handlerResponse s =
 	{ globalState   = s  , newConnection   = []
 	, newListener   = [] , sendData        = []
@@ -21,7 +21,7 @@ handlerResponse s =
 	, stop          = False
 	}
 
-emptyServer :: Server st ci
+emptyServer :: Server ci .st
 emptyServer =
 	{ Server
 	| idleTimeout     = Just 100
@@ -57,7 +57,7 @@ usleep t w = code {
 	ccall usleep "I:I:A"
 }
 
-serve :: !.(Server .a b) .a !*World -> (MaybeError String .a, !*World) | == b
+serve :: (Server ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
 serve server s w
 # (r, w) = server.onInit s w
 = cont server [] [] r 0 w
@@ -65,14 +65,14 @@ serve server s w
 tous :: Timespec -> Int
 tous {tv_sec,tv_nsec} = tv_sec*1000000+tv_nsec/1000
 
-loop ::
-	!(Server .a b)
-	*[*(TCP_Listener, Int)]
-	*[*(TCP_SChannel, TCP_RChannel, b)]
-	.a
-	Int
-	!*World
-	-> (MaybeError String .a, !*World) | == b
+//loop ::
+//	!(Server ci .st)
+//	*[*(TCP_Listener, Int)]
+//	*[*(TCP_SChannel, TCP_RChannel, ci)]
+//	.st
+//	Int
+//	!*World
+//	-> *(Maybe String, .st, !*World) | == ci
 loop server listeners channels s lastOnTick w
 # (ts, w) = appFst tous $ nsTime w
 //Do the select
@@ -131,10 +131,10 @@ loop server listeners channels s lastOnTick w
 				$ seq [closeChannel sChannel, closeRChannel rChannel] w
 		//Unknown or unused select codes
 		| what =: SR_Sendable
-			= (Error $ "SR_Sendable on " +++ toString index, w)
+			= (Just $ "SR_Sendable on " +++ toString index, s, w)
 		| what =: SR_Disconnected
-			= (Error $ "SR_Disconnected on " +++ toString index, w)
-			= (Error $ "Unknown select code: " +++ toString what +++ " on " +++ toString index, w)
+			= (Just $ "SR_Disconnected on " +++ toString index, s, w)
+			= (Just $ "Unknown select code: " +++ toString what +++ " on " +++ toString index, s, w)
 
 maybeSend _ Nothing sC w = (sC, w)
 maybeSend to (Just d) sC w
@@ -148,30 +148,30 @@ seqListError [x:xs] s = case x s of
 		(Ok as, s) = (Ok [a:as], s)
 		(Error e, s) = (Error e, s)
 
-cont ::
-	(Server .a b)
-	*[*(TCP_Listener, Int)]
-	*[*(TCP_SChannel, TCP_RChannel, b)]
-	!*(HandlerResponse .a b)
-	Int
-	!*World
-	-> (MaybeError String .a, !*World) | == b
+//cont ::
+//	(Server ci .st)
+//	*[*(TCP_Listener, Int)]
+//	*[*(TCP_SChannel, TCP_RChannel, ci)]
+//	!*(HandlerResponse ci .st)
+//	Int
+//	!*World
+//	-> *(Maybe String, .st, !*World) | == ci
 //Add listener
-cont server listeners channels response=:{newListener=[port:ls]} lastOnTick w
+cont server listeners channels response=:{newListener=[port:ls],globalState} lastOnTick w
 //	| not (trace_tn ("add listener: " +++ toString port)) = undef
 	= case openTCP_Listener port w of
-		(_, Nothing, w) = (Error "Couldn't open TCP_Listener", w)
+		(_, Nothing, w) = (Just "Couldn't open TCP_Listener", globalState, w)
 		(_, Just l, w) = cont server (listeners ++ [(l, port)]) channels {response & newListener=ls} lastOnTick w
 //Add connection
 cont server listeners channels response=:{newConnection=[(host,port,ci):cs],globalState,closeConnection,newListener,sendData,closeListener} lastOnTick w
 //	| not (trace_tn ("add connection: " +++ host +++ ":" +++ toString port)) = undef
 	# (mi, w) = lookupIPAddress host w
-	| isNothing mi = (Error "Couldn't lookupIPAddress", w)
+	| isNothing mi = (Just "Couldn't lookupIPAddress", globalState, w)
 	# (tr, mc, w) = connectTCP_MT server.connectTimeout (fromJust mi, port) w
-	| tr =: TR_Expired = (Error "Timeout expired while opening TCP", w)
-	| tr =: TR_NoSuccess = (Error "No success while opening TCP", w)
+	| tr =: TR_Expired = (Just "Timeout expired while opening TCP", globalState, w)
+	| tr =: TR_NoSuccess = (Just "No success while opening TCP", globalState, w)
 	= case mc of
-		Nothing = (Error "Halp?", w)
+		Nothing = (Just "Halp?", globalState, w)
 		Just {rChannel,sChannel}
 			# (md, ci, r, w) = server.onNewSuccess ci globalState w
 			# (sChannel, w) = maybeSend server.sendTimeout md sChannel w
@@ -208,7 +208,9 @@ where
 		= send w xs (channels ++ [(sc,rc,p)])
 	
 //Stop
-cont server [] [] response=:{globalState,stop=True} lastOnTick w = appFst Ok (server.onClose globalState w)
+cont server [] [] response=:{globalState,stop=True} lastOnTick w
+	# (globalState, w) = server.onClose globalState w
+	= (Nothing, globalState, w)
 cont server listeners channels response=:{stop=True} lastOnTick w
 //	| not (trace_tn "Stop") = undef
 	# (listeners, ports) = unzip listeners

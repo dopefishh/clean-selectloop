@@ -6,7 +6,7 @@ import Data.Maybe
 import Data.Tuple
 import Data.Error
 
-connect :: String Int (ConnectionHandlers st) st !*World -> *(MaybeErrorString st, !*World)
+connect :: String Int (ConnectionHandlers .st) .st !*World -> *(Maybe String, .st, !*World)
 connect host port {ConnectionHandlers|onConnect,onData,onTick,onClose} s w
 	= serve
 	{ Server
@@ -27,14 +27,14 @@ connect host port {ConnectionHandlers|onConnect,onData,onTick,onClose} s w
 		in (ms, "", liftHandler r, w`)
 	} s w
 
-liftHandler :: !*(ConnectionResponse .a) -> *(HandlerResponse .a b)
+liftHandler :: !*(ConnectionResponse .st) -> *(HandlerResponse ci .st)
 liftHandler {ConnectionResponse | globalState,stop}
 	= {HandlerResponse | handlerResponse globalState & stop=stop}
 
-connectionResponse :: st -> ConnectionResponse st
+connectionResponse :: .st -> ConnectionResponse .st
 connectionResponse s = {ConnectionResponse|globalState=s,stop=False}
 
-emptyConnection :: ConnectionHandlers st
+emptyConnection :: ConnectionHandlers .st
 emptyConnection
 # { Server|idleTimeout,sendTimeout,connectTimeout} = emptyServer
 = { ConnectionHandlers

@@ -16,7 +16,7 @@ from System.Time import :: Timespec
  *           the state.
  *
  */
-:: Server st ci =
+:: Server ci st =
 	// Time between ticks when nothing happens in ms
 	{ idleTimeout     :: Maybe Int
 	// Send timeout in ms
@@ -24,24 +24,24 @@ from System.Time import :: Timespec
 	// Connect timeout in ms
 	, connectTimeout  :: Maybe Int
 	//Runs initially
-	, onInit          ::               st *World -> *(*(HandlerResponse st ci), !*World)
+	, onInit          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
 	//Runs when a client connects to one of your listeners
-	, onConnect       :: String Int    st *World -> *(Maybe String, ci, *(HandlerResponse st ci), !*World)
+	, onConnect       :: String Int    -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
 	//Runs when a new connection was set up successfully
-	, onNewSuccess    ::            ci st *World -> *(Maybe String, ci, *(HandlerResponse st ci), !*World)
+	, onNewSuccess    ::            ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
 	//Runs when there is data on one of the channels
-	, onData          :: String     ci st *World -> *(Maybe String, ci, *(HandlerResponse st ci), !*World)
+	, onData          :: String     ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
 	//Runs when the select timer times out
-	, onTick          ::               st *World -> *(*(HandlerResponse st ci), !*World)
+	, onTick          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
 	//Runs when a client closes the connection or when you close a channel connection
-	, onClientClose   ::            ci st *World -> *(*(HandlerResponse st ci), !*World)
+	, onClientClose   ::            ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
 	//Runs when you close a listener
-	, onListenerClose ::        Int    st *World -> *(*(HandlerResponse st ci), !*World)
+	, onListenerClose ::        Int    -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
 	//Runs when you close
-	, onClose         ::               st *World -> *(st, !*World)
+	, onClose         ::                    st -> *(*World -> *(st, !*World))
 	}
 
-:: *HandlerResponse st ci =
+:: *HandlerResponse ci st =
 	{ globalState     :: st
 	, newListener     :: [Int]
 	, newConnection   :: [(String, Int, ci)]
@@ -51,11 +51,11 @@ from System.Time import :: Timespec
 	, stop            :: Bool
 	}
 
-handlerResponse :: .st -> *(HandlerResponse .st ci)
-emptyServer :: Server st ci
+handlerResponse :: .st -> *(HandlerResponse ci .st)
+emptyServer :: Server ci .st
 
 :: Connection
 	= Listener Int
 	| Connection Int String
 
-serve :: !.(Server .a b) .a !*World -> (MaybeError String .a, !*World) | == b
+serve :: (Server ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci

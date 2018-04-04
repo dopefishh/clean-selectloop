@@ -33,3 +33,7 @@ If you want to build with `cpm`, run `make prj` followed by `cpm make` in the ex
 - Wget
 
 	Implements a simple http file downloader
+
+- IRC
+	https://github.com/clean-cloogle/clean-irc/ uses this library to implement
+	a IRC bot interface

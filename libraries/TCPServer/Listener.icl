@@ -5,7 +5,7 @@ import Data.Tuple
 import Data.Maybe
 import StdMisc
 
-listen :: Int (ListenerHandlers ci st) st !*World -> *(MaybeErrorString st, !*World) | == ci
+listen :: Int (ListenerHandlers ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
 listen port {ListenerHandlers|onInit,onConnect,onData,onTick,onClientClose,onClose} s w
 	= serve
 	{ Server
@@ -25,16 +25,16 @@ listen port {ListenerHandlers|onInit,onConnect,onData,onTick,onClientClose,onClo
 	, onClientClose = \    c s w->
 		let (r, w`) = onClientClose c s w
 		in (liftHandler r, w`)
-	, onClose       = onClose 
+	, onClose       = onClose
 	} s w
 
 liftHandler {ListenerResponse|globalState,sendData,stop,closeConnection}
 	= {HandlerResponse|handlerResponse globalState & sendData=sendData, stop=stop,closeConnection=closeConnection}
 
-listenerResponse :: st -> ListenerResponse st ci
+listenerResponse :: .st -> *(ListenerResponse ci .st)
 listenerResponse s = {ListenerResponse|globalState=s,sendData=[],stop=False,closeConnection=[]}
 
-emptyListener :: ListenerHandlers ci st
+emptyListener :: ListenerHandlers ci .st
 emptyListener
 # {Server|idleTimeout,sendTimeout,connectTimeout} = emptyServer
 = { ListenerHandlers

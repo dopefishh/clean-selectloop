@@ -7,9 +7,12 @@ import Data.Maybe
 import Data.Tuple
 import TCPServer.Listener
 
-Start w = listen 8123
+Start w
+# (io, w) = stdio w
+# (merr, io, w) = listen 8123
 	{ emptyListener
 	& onConnect     = \h p   s w->
 		let (t, w`) = time w
-		in (Just (toString t +++ "\n"), s, listenerResponse s, w`)
-	} "" w
+		in (Just (toString t +++ "\n"), 0, listenerResponse s, w`)
+	} io w
+= fclose io w
