@@ -1,20 +1,9 @@
 definition module TCPServer.Connection
 
 from Data.Maybe import :: Maybe
+from Data.Error import :: MaybeError, :: MaybeErrorString
 
-connect ::
-	String //Host
-	Int //Port
-	(Maybe Int) //idleTimeout
-	(Maybe Int) //sendTimeout
-	(Maybe Int) //connectTimeout
-	(.st -> .(*World -> *(Maybe String, *(ConnectionResponse .st), !*World))) //onConnect
-	(String -> .(.st -> .(*World -> *(Maybe String, *(ConnectionResponse .st), !*World)))) //onData
-	(.st -> .(*World -> *(Maybe String, *(ConnectionResponse .st), !*World))) // onTick
-	(.st -> .(*World -> *(.st, !*World))) // onClose
-	.st
-	!*World
-	-> *(Maybe String, .st, !*World)
+connect :: String Int (ConnectionHandlers st) st !*World -> *(MaybeErrorString st, !*World)
 
 :: ConnectionHandlers st =
 	{ idleTimeout     :: Maybe Int
@@ -32,3 +21,4 @@ connect ::
 	}
 
 connectionResponse :: st -> ConnectionResponse st
+emptyConnection :: ConnectionHandlers st
