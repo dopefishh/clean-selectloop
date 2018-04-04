@@ -22,12 +22,12 @@ Start w
 | args =: [] || args =: [_,_:_] = die ("usage: " +++ argv0 +++ " URL\n") w
 = case parseURI (hd args) of
 	Nothing = die "Unable to parse URI" w
-	Just uri = case httpRequest
+	Just uri = case httpRequestFollowRedirects
 			{ newHTTPRequest
 			& server_name = fromMaybe ""  uri.uriRegName
 			, server_port = fromMaybe 80  uri.uriPort
 			, req_path    = if (uri.uriPath == "") "/" uri.uriPath
 			, req_query   = fromMaybe ""  uri.uriQuery
-			} w of
+			} 10 w of
 		(Error e, w) = die e w
 		(Ok resp, w) = exit 0 resp.rsp_data w
