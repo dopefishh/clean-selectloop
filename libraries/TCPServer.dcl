@@ -6,7 +6,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 
 from System.Time import :: Timespec
 
-/*
+/**
  * The server handlers
  *
  * @var Client state
@@ -37,7 +37,7 @@ from System.Time import :: Timespec
 	//* Runs when you close
 	}
 
-/*
+/**
  * Handler response
  *
  * @var Client state
@@ -60,7 +60,7 @@ from System.Time import :: Timespec
 	//* Stop
 	}
 
-/*
+/**
  * The serve function.
  * With this function you can create a dynamic system of TCP connections.
  * In every handler you have access to a possibly unique state.
@@ -73,7 +73,7 @@ from System.Time import :: Timespec
  */
 serve :: (Server ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
 
-/*
+/**
  * Create a HandlerResponse from a given state
  *
  * @param State
@@ -81,7 +81,7 @@ serve :: (Server ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
  */
 handlerResponse :: .st -> *(HandlerResponse ci .st)
 
-/*
+/**
  * Create an empty server
  *
  * @result A Server record

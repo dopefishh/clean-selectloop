@@ -3,7 +3,7 @@ definition module TCPServer.HTTP
 from Internet.HTTP import :: HTTPRequest, :: HTTPResponse
 from Data.Error import :: MaybeError, :: MaybeErrorString
 
-/*
+/***
  * Do a HTTP request
  *
  * @param The request
@@ -12,7 +12,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
  */
 httpRequest :: HTTPRequest !*World -> (MaybeErrorString HTTPResponse,*World)
 
-/*
+/***
  * Do a HTTP request and follow redirect responses
  *
  * @param The request

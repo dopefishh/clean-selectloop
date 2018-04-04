@@ -4,7 +4,7 @@ from StdOverloaded import class ==
 from Data.Maybe import :: Maybe
 from Data.Error import :: MaybeError, :: MaybeErrorString
 
-/*
+/***
  * The listener handlers.
  *
  * @var Client state
@@ -31,7 +31,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	//* Runs when you close
 	}
 
-/*
+/***
  * Listener response
  *
  * @var Client state
@@ -43,7 +43,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	, closeConnection :: [ci]
 	, stop            :: Bool
 	}
-/*
+/***
  * The listen function
  * This is an abstraction over {{TCPServer}}'s {{serve}}.
  * In this abstraction there is only one listener.
@@ -56,7 +56,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
  */
 listen :: Int (ListenerHandlers ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
 
-/*
+/***
  * Create a ListenerResponse from a given state
  *
  * @param State
@@ -64,7 +64,7 @@ listen :: Int (ListenerHandlers ci .st) .st !*World -> *(Maybe String, .st, !*Wo
  */
 listenerResponse :: .st -> *(ListenerResponse ci .st)
 
-/*
+/***
  * Create an empty listener
  *
  * @result A Listener record

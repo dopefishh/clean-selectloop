@@ -3,7 +3,7 @@ definition module TCPServer.Connection
 from Data.Maybe import :: Maybe
 from Data.Error import :: MaybeError, :: MaybeErrorString
 
-/*
+/***
  * Connection handlers
  *
  * @var State
@@ -25,7 +25,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	//* Runs when you close
 	}
 
-/*
+/***
  * Connection response
  *
  * @var State
@@ -37,7 +37,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	//* Stop
 	}
 
-/*
+/***
  * The connect function
  * This is an abstraction over {{TCPServer}}'s {{serve}}.
  * In this abstraction there is only one connection.
@@ -51,7 +51,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
  */
 connect :: String Int (ConnectionHandlers .st) .st !*World -> *(Maybe String, .st, !*World)
 
-/*
+/***
  * Create a ConnectionResponse form a given state
  *
  * @param State
@@ -59,7 +59,7 @@ connect :: String Int (ConnectionHandlers .st) .st !*World -> *(Maybe String, .s
  */
 connectionResponse :: .st -> ConnectionResponse .st
 
-/*
+/***
  * Create an empty connection
  *
  * @result Connection record
