@@ -44,7 +44,7 @@ from System.Time import :: Timespec
  * @var Global state
  */
 :: *HandlerResponse ci st =
-	{ globalState     :: st
+	{ globalState     :: !st
 	//* State
 	, newListener     :: [Int]
 	//* Listeners to add
@@ -71,7 +71,7 @@ from System.Time import :: Timespec
  * @param World
  * @result Maybe an error message, the state and the world
  */
-serve :: (Server ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
+serve :: (Server ci .st) .st !*World -> *(Maybe String, !.st, !*World) | == ci
 
 /**
  * Create a HandlerResponse from a given state
@@ -79,7 +79,7 @@ serve :: (Server ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
  * @param State
  * @result Handleresponse
  */
-handlerResponse :: .st -> *(HandlerResponse ci .st)
+handlerResponse :: !.st -> *(HandlerResponse ci .st)
 
 /**
  * Create an empty server

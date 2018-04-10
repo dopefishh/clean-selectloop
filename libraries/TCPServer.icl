@@ -11,7 +11,7 @@ import TCPIP
 import Data.Error
 import Data.List
 
-handlerResponse :: .st -> *(HandlerResponse ci .st)
+handlerResponse :: !.st -> *(HandlerResponse ci .st)
 handlerResponse s =
 	{ globalState   = s  , newConnection   = []
 	, newListener   = [] , sendData        = []
@@ -22,7 +22,7 @@ handlerResponse s =
 emptyServer :: Server ci .st
 emptyServer =
 	{ Server
-	| idleTimeout     = Just 100
+	| idleTimeout     = Just 1000
 	, sendTimeout     = Nothing
 	, connectTimeout  = Nothing
 	, onInit          = \        s w->(handlerResponse s, w)
@@ -51,10 +51,10 @@ selectListMultiple p [x:xs]
 
 usleep :: !Int !*w -> (!Int, !*w)
 usleep t w = code {
-	ccall usleep "I:I:A"
-}
+		ccall usleep "I:I:A"
+	}
 
-serve :: (Server ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
+serve :: (Server ci .st) .st !*World -> *(Maybe String, !.st, !*World) | == ci
 serve server s w
 # (r, w) = server.onInit s w
 = cont server [] [] r 0 w
@@ -62,6 +62,7 @@ serve server s w
 tous :: Timespec -> Int
 tous {tv_sec,tv_nsec} = tv_sec*1000000+tv_nsec/1000
 
+loop :: (Server ci .st) *[*(*(TCP_Listener_ *(IPAddress,*(DuplexChannel *TCP_SChannel_ *TCP_RChannel_ ByteSeq))),Int)] *[*(*(TCP_SChannel_ ByteSeq),*(TCP_RChannel_ ByteSeq),ci)] .st Int !*World -> (.(Maybe {#Char}),.st,!.World) | == ci
 loop server listeners channels s lastOnTick w
 # (ts, w) = appFst tous $ nsTime w
 //Do the select
@@ -86,7 +87,6 @@ loop server listeners channels s lastOnTick w
 	[(index, what):_]
 		//New connection
 		| index < numl
-//			| not (trace_tn "new connection") = undef
 			//Select
 			# ((lst, port), listeners) = selectList index listeners
 			//Receive
@@ -104,7 +104,6 @@ loop server listeners channels s lastOnTick w
 			# ((sChannel,rChannel, ci), channels) = selectList (index - numl) channels
 			//Receive
 			# (byteSeq, rChannel, w) = receive rChannel w
-//			| not (trace_tn ("new data: " +++ toString byteSeq)) = undef
 			//Run onData
 			# (md, ci, r, w) = server.onData (toString byteSeq) ci s w
 			//Maybe send
@@ -112,7 +111,6 @@ loop server listeners channels s lastOnTick w
 			= cont server listeners (channels ++ [(sChannel,rChannel,ci)]) r lastOnTick w
 		//Client closing
 		| what =: SR_EOM
-//			| not (trace_tn "client close") = undef
 			# ((sChannel,rChannel, ci), channels) = selectList (index - numl) channels
 			//Run onClose
 			# (r, w) = server.onClientClose ci s w
@@ -139,13 +137,11 @@ seqListError [x:xs] s = case x s of
 
 //Add listener
 cont server listeners channels response=:{newListener=[port:ls],globalState} lastOnTick w
-//	| not (trace_tn ("add listener: " +++ toString port)) = undef
 	= case openTCP_Listener port w of
 		(_, Nothing, w) = (Just "Couldn't open TCP_Listener", globalState, w)
 		(_, Just l, w) = cont server (listeners ++ [(l, port)]) channels {response & newListener=ls} lastOnTick w
 //Add connection
 cont server listeners channels response=:{newConnection=[(host,port,ci):cs],globalState,closeConnection,newListener,sendData,closeListener} lastOnTick w
-//	| not (trace_tn ("add connection: " +++ host +++ ":" +++ toString port)) = undef
 	# (mi, w) = lookupIPAddress host w
 	| isNothing mi = (Just "Couldn't lookupIPAddress", globalState, w)
 	# (tr, mc, w) = connectTCP_MT server.connectTimeout (fromJust mi, port) w
@@ -159,7 +155,6 @@ cont server listeners channels response=:{newConnection=[(host,port,ci):cs],glob
 			= cont server listeners (channels ++ [(sChannel,rChannel,ci)]) (mergeR r newListener cs sendData closeListener closeConnection) lastOnTick w
 //Remove listener
 cont server listeners channels response=:{globalState,closeListener=[port:cs],newListener,newConnection,sendData,closeConnection} lastOnTick w
-//	| not (trace_tn ("remove listener " +++ toString port)) = undef
 	# (toClose, listeners) = selectListMultiple (\(l,p)->(p==port, (l, p))) listeners
 	= case toClose of
 		[] = cont server listeners channels {response & closeListener=cs} lastOnTick w
@@ -173,14 +168,12 @@ cont server listeners channels response=:{globalState,closeConnection=[ci:cs],ne
 	= case toClose of
 		[] = cont server listeners channels {response & closeConnection=cs} lastOnTick w
 		[(sc,rc,p):xs]
-//			| not (trace_tn ("remove channel")) = undef
 			# (r, w) = server.onClientClose p globalState w
 			= cont server listeners channels (mergeR r newListener newConnection sendData closeListener [ci:cs]) lastOnTick
 				$ closeChannel sc
 				$ closeRChannel rc w
 //Send data
 cont server listeners channels response=:{sendData=[(ci, data):ds]} lastOnTick w
-//	| not (trace_tn ("Send data: " +++ data)) = undef
 	= uncurry (send w) $ selectListMultiple (\(s,r,p)->(p==ci, (s,r,p))) channels
 where
 	send w [] channels = cont server listeners channels {response & sendData=ds} lastOnTick w
@@ -193,7 +186,6 @@ cont server [] [] response=:{globalState,stop=True} lastOnTick w
 	# (globalState, w) = server.onClose globalState w
 	= (Nothing, globalState, w)
 cont server listeners channels response=:{stop=True} lastOnTick w
-//	| not (trace_tn "Stop") = undef
 	# (listeners, ports) = unzip listeners
 	# listeners = zip2 listeners ports
 	# (schannels, rchannels, cids) = unzip3 channels
