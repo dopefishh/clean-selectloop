@@ -12,10 +12,12 @@ listen port {ListenerHandlers|onInit,onConnect,onData,onTick,onClientClose,onClo
 	| emptyServer
 	& onInit        = \      s w->
 		let (r, w`) = onInit s w
-		in ({HandlerResponse | liftHandler r & newListener=[port]}, w`)
-	, onConnect     = \h p   s w->
-		let (md, ci, r, w`) = onConnect h p s w
-		in (md, ci, liftHandler r, w`)
+		in ({HandlerResponse | liftHandler r & newListener=[
+			{ Listener
+			| port=port
+			, onConnect=onConnectH
+			, onError  = \e s w->(True, handlerResponse s, w)
+			}]}, w`)
 	, onData        = \d   c s w->
 		let (md, ci, r, w`) = onData d c s w
 		in (md, ci, liftHandler r, w`)
@@ -27,6 +29,10 @@ listen port {ListenerHandlers|onInit,onConnect,onData,onTick,onClientClose,onClo
 		in (liftHandler r, w`)
 	, onClose       = onClose
 	} s w
+where
+	onConnectH h p s w
+		# (md, ci, r, w) = onConnect h p s w
+		= (md, ci, liftHandler r, w)
 
 liftHandler {ListenerResponse|globalState,sendData,stop,closeConnection}
 	= {HandlerResponse|handlerResponse globalState & sendData=sendData, stop=stop,closeConnection=closeConnection}

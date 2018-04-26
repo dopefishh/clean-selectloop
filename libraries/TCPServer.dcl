@@ -6,6 +6,8 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 
 from System.Time import :: Timespec
 
+:: OnDataFun ci st :== String ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+
 /**
  * The server handlers
  *
@@ -21,10 +23,6 @@ from System.Time import :: Timespec
 	//* Connect timeout in ms
 	, onInit          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
 	//* Runs initially
-	, onConnect       :: String Int    -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
-	//* Runs when a client connects to one of your listeners
-	, onNewSuccess    ::            ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
-	//* Runs when a new connection was set up successfully
 	, onData          :: String     ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
 	//* Runs when there is data on one of the channels
 	, onTick          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
@@ -46,9 +44,9 @@ from System.Time import :: Timespec
 :: *HandlerResponse ci st =
 	{ globalState     :: !st
 	//* State
-	, newListener     :: [Int]
-	//* Listeners to add
-	, newConnection   :: [(String, Int, ci)]
+	, newListener     :: [Listener ci st]
+	//* Listeners to add, Listeners are a port and a handler
+	, newConnection   :: [Connection ci st]
 	//* Connections to add, host, port and initial state
 	, sendData        :: [(ci, String)]
 	//* Data to send, relies on == of ci
@@ -58,6 +56,26 @@ from System.Time import :: Timespec
 	//* Connections to close by ci
 	, stop            :: Bool
 	//* Stop
+	}
+
+:: Listener ci st =
+	{ port      :: Int
+	, onConnect :: String Int -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
+	} 
+
+:: TCPServerError
+	= ConnectionTimedOut
+	| ConnectionLookupError
+	| ConnectionUnableToOpen
+	| ListenerUnableToOpen
+
+:: Connection ci st =
+	{ host      :: String
+	, port      :: Int
+	, state     :: ci
+	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
 	}
 
 /**

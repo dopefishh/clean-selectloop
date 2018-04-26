@@ -11,7 +11,7 @@ prj: $(addsuffix .prj,$(binaries))
 
 %.prj:
 	cpm project $(basename $@) create
-	cpm project $@ set -h 200m -s 200m
+	cpm project $@ set -h 200m -s 200m -dynamics
 	cpm project $@ target iTasks
 	cpm project $@ path add "$$PWD/../libraries"
 
