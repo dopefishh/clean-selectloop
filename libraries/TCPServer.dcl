@@ -23,14 +23,8 @@ from System.Time import :: Timespec
 	//* Connect timeout in ms
 	, onInit          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
 	//* Runs initially
-	, onData          :: String     ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
-	//* Runs when there is data on one of the channels
 	, onTick          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
 	//* Runs when the select timer times out
-	, onClientClose   ::            ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
-	//* Runs when a client closes the connection or when you close a channel connection
-	, onListenerClose ::        Int    -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
-	//* Runs when you close a listener
 	, onClose         ::                    st -> *(*World -> *(st, !*World))
 	//* Runs when you close
 	}
@@ -58,12 +52,6 @@ from System.Time import :: Timespec
 	//* Stop
 	}
 
-:: Listener ci st =
-	{ port      :: Int
-	, onConnect :: String Int -> .(st -> *(*World -> *(Maybe String, Connection ci st, *(HandlerResponse ci st), !*World)))
-	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
-	} 
-
 :: TCPServerError
 	= ConnectionTimedOut
 	| ConnectionLookupError
@@ -71,14 +59,24 @@ from System.Time import :: Timespec
 	| ListenerUnableToOpen
 	| ListenerUnableToAnswer
 
+:: Listener ci st =
+	{ port      :: Int
+	, onConnect :: String Int -> .(st -> *(*World -> *(Maybe String, Connection ci st, *(HandlerResponse ci st), !*World)))
+	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
+	, onClose   :: st -> *(*World -> *(*(HandlerResponse ci st), !*World))
+	} 
+emptyListener :: Listener ci st
+
 :: Connection ci st =
 	{ host      :: String
 	, port      :: Int
 	, state     :: ci
 	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
 	, onClose   :: ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
+	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
 	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
 	}
+emptyConnection :: ci -> Connection ci st
 
 /**
  * The serve function.

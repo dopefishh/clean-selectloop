@@ -19,14 +19,10 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	//* Connect timeout in ms
 	, onInit          ::                    st -> *(*World -> *(                  *(ListenerResponse ci st), !*World))
 	//* Runs initially
-	, onConnect       :: String Int    -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
-	//* Runs when a client connects to one of your listeners
-	, onData          :: String     ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
+	, onConnect       :: String Int    -> .(st -> *(*World -> *(Maybe String, LConnection ci st, *(ListenerResponse ci st), !*World)))
 	//* Runs when there is data from one of the clients
 	, onTick          ::                    st -> *(*World -> *(                  *(ListenerResponse ci st), !*World))
 	//* Runs when the select timer times out
-	, onClientClose   ::            ci -> .(st -> *(*World -> *(                  *(ListenerResponse ci st), !*World)))
-	//* Runs when a client closes the connection or when you close a client
 	, onClose         ::                    st -> *(*World -> *(st, !*World))
 	//* Runs when you close
 	}
@@ -43,6 +39,16 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	, closeConnection :: [ci]
 	, stop            :: Bool
 	}
+
+:: LConnection ci st =
+	{ state     :: ci
+	, port      :: Int
+	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
+	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
+	, onClose   :: ci -> .(st -> *(*World -> *(*(ListenerResponse ci st), !*World)))
+	}
+emptyLConnection :: ci -> LConnection ci st
+
 /***
  * The listen function
  * This is an abstraction over {{TCPServer}}'s {{serve}}.

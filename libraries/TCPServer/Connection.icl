@@ -15,12 +15,6 @@ connect host port {ConnectionHandlers|onConnect,onData,onTick,onClose} s w
 	, onTick          = \s w    ->
 		let (ms, r, w`) = onTick s w
 		in ({HandlerResponse | liftHandler r & sendData=map (tuple "") (maybeToList ms)}, w`)
-	, onClientClose   = \_ s w  ->
-		let (s`, w`) = onClose s w
-		in ({HandlerResponse | handlerResponse s` & stop=True}, w`)
-	, onData          = \d _ s w->
-		let (ms, r, w`) = onData d s w
-		in (ms, "", liftHandler r, w`)
 	} s w
 where
 	onConnectH ci s w
@@ -38,6 +32,9 @@ where
 					, state    =""
 					, onConnect=onConnectH
 					, onError  = \e s w->(True, handlerResponse s, w)
+					, onData   = \d _ s w->
+						let (ms, r, w`) = onData d s w
+						in (ms, "", liftHandler r, w`)
 					, onClose  = \c s w->
 						let (s`, w`) = onClose s w
 						in (

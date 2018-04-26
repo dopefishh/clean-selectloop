@@ -5,8 +5,18 @@ import Data.Tuple
 import Data.Maybe
 import StdMisc
 
+emptyLConnection :: ci -> LConnection ci st
+emptyLConnection st =
+	{ LConnection
+	| state = st
+	, port  = 0
+	, onConnect = \c s w->(Nothing, c, listenerResponse s, w)
+	, onData    = \d c s w->(Nothing, c, listenerResponse s, w)
+	, onClose   = \c s w->(listenerResponse s, w)
+	}
+
 listen :: Int (ListenerHandlers ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
-listen port {ListenerHandlers|onInit,onConnect,onData,onTick,onClientClose,onClose} s w
+listen port {ListenerHandlers|onInit,onConnect,onTick,onClose} s w
 	= serve
 	{ Server
 	| emptyServer
@@ -16,32 +26,32 @@ listen port {ListenerHandlers|onInit,onConnect,onData,onTick,onClientClose,onClo
 			{ Listener
 			| port=port
 			, onConnect=onConnectH
+			, onClose  = \s w  ->(handlerResponse s, w)
 			, onError  = \e s w->(True, handlerResponse s, w)
 			}]}, w`)
-	, onData        = \d   c s w->
-		let (md, ci, r, w`) = onData d c s w
-		in (md, ci, liftHandler r, w`)
 	, onTick        = \      s w->
 		let (r, w`) = onTick s w
-		in (liftHandler r, w`)
-	, onClientClose = \    c s w->
-		let (r, w`) = onClientClose c s w
 		in (liftHandler r, w`)
 	, onClose       = onClose
 	} s w
 where
 	onConnectH h p s w
-		# (md, ci, r, w) = onConnect h p s w
+		# (md, crecord, r, w) = onConnect h p s w
 		= (md,
 			{ Connection
 			| host     = h
 			, port     = p
-			, state    = ci
+			, state    = crecord.LConnection.state
 			, onError  = bail
-			, onConnect= \c s w->(Nothing, c, handlerResponse s, w)
+			, onConnect= \c s w->
+				let (md, cs, r, w`) = crecord.LConnection.onConnect c s w
+				in (md, cs, liftHandler r, w`)
 			, onClose  = \    c s w->
-				let (r, w`) = onClientClose c s w
+				let (r, w`) = crecord.LConnection.onClose c s w
 				in (liftHandler r, w`)
+			, onData   = \d c s w->
+				let (md, cs, r, w`) = crecord.LConnection.onData d c s w
+				in (md, cs, liftHandler r, w`)
 			}, liftHandler r, w)
 	bail e s w = (True, handlerResponse s, w)
 
@@ -60,8 +70,6 @@ emptyListener
 	, connectTimeout= connectTimeout
 	, onInit        = \    s w->(listenerResponse s, w)
 	, onConnect     = \_ _ s w->(Nothing, undef, listenerResponse s, w)
-	, onData        = \_ c s w->(Nothing, c, listenerResponse s, w)
 	, onTick        = \    s w->(listenerResponse s, w)
-	, onClientClose = \  c s w->(listenerResponse s, w)
 	, onClose       = tuple
 	}

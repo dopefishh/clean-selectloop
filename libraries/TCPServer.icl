@@ -11,6 +11,26 @@ import TCPIP
 import Data.Error
 import Data.List
 
+emptyListener :: Listener ci st
+emptyListener =
+	{ Listener
+	| port      = 0
+	, onConnect = \h p s w->(Nothing, emptyConnection undef, handlerResponse s, w)
+	, onError   = \e s w->(True, handlerResponse s, w)
+	, onClose   = \s w->(handlerResponse s, w)
+	}
+
+emptyConnection :: ci -> Connection ci st
+emptyConnection st =
+	{ host      = ""
+	, port      = 0
+	, state     = st
+	, onConnect = \c s w->(Nothing, c, handlerResponse s, w)
+	, onClose   = \c s w->(handlerResponse s, w)
+	, onData    = \d c s w->(Nothing, c, handlerResponse s, w)
+	, onError   = \e s w->(True, handlerResponse s, w)
+	}
+
 handlerResponse :: !.st -> *(HandlerResponse ci .st)
 handlerResponse s =
 	{ globalState   = s  , newConnection   = []
@@ -25,12 +45,9 @@ emptyServer =
 	| idleTimeout     = Just 1000
 	, sendTimeout     = Nothing
 	, connectTimeout  = Nothing
-	, onInit          = \        s w->(handlerResponse s, w)
-	, onData          = \    d c s w->(Nothing, c, handlerResponse s, w)
-	, onTick          = \        s w->(handlerResponse s, w)
-	, onClientClose   = \      _ s w->(handlerResponse s, w)
-	, onListenerClose = \  p     s w->(handlerResponse s, w)
-	, onClose         = \        s w->(s, w)
+	, onInit          = \s w->(handlerResponse s, w)
+	, onTick          = \s w->(handlerResponse s, w)
+	, onClose         = \s w->(s, w)
 	}
 
 msToTimespec :: Int -> Timespec
@@ -116,7 +133,7 @@ loop server listeners channels s lastOnTick w
 			//Receive
 			# (byteSeq, rChannel, w) = receive rChannel w
 			//Run onData
-			# (md, ci, r, w) = server.onData (toString byteSeq) crecord.Connection.state s w
+			# (md, ci, r, w) = crecord.Connection.onData (toString byteSeq) crecord.Connection.state s w
 			//Maybe send
 			# (sChannel, w) = maybeSend server.sendTimeout md sChannel w
 			= cont server listeners (channels ++ [(sChannel,rChannel,{Connection | crecord & state=ci})]) r lastOnTick w
@@ -177,7 +194,7 @@ cont server listeners channels response=:{globalState,closeListener=[port:cs],ne
 	= case toClose of
 		[] = cont server listeners channels {response & closeListener=cs} lastOnTick w
 		[(l,p):xs]
-			# (r, w) = server.onListenerClose port globalState w
+			# (r, w) = p.Listener.onClose globalState w
 			= cont server listeners channels (mergeR r newListener newConnection sendData [port:cs] closeConnection) lastOnTick
 				$ closeRChannel l w
 //Remove channel
@@ -187,7 +204,7 @@ cont server listeners channels response=:{globalState,closeConnection=[ci:cs],ne
 	= case toClose of
 		[] = cont server listeners channels {response & closeConnection=cs} lastOnTick w
 		[(sc, rc, crecord):xs]
-			# (r, w) = server.onClientClose crecord.Connection.state globalState w
+			# (r, w) = crecord.Connection.onClose crecord.Connection.state globalState w
 			= cont server listeners channels (mergeR r newListener newConnection sendData closeListener [ci:cs]) lastOnTick
 				$ closeChannel sc
 				$ closeRChannel rc w
