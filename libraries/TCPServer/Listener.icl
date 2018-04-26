@@ -34,11 +34,14 @@ where
 		# (md, ci, r, w) = onConnect h p s w
 		= (md,
 			{ Connection
-			| host=h
-			, port=p
-			, state=ci
-			, onError=bail
+			| host     = h
+			, port     = p
+			, state    = ci
+			, onError  = bail
 			, onConnect= \c s w->(Nothing, c, handlerResponse s, w)
+			, onClose  = \    c s w->
+				let (r, w`) = onClientClose c s w
+				in (liftHandler r, w`)
 			}, liftHandler r, w)
 	bail e s w = (True, handlerResponse s, w)
 

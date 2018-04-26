@@ -76,6 +76,7 @@ from System.Time import :: Timespec
 	, port      :: Int
 	, state     :: ci
 	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+	, onClose   :: ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
 	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
 	}
 

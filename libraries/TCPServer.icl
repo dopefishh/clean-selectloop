@@ -124,7 +124,7 @@ loop server listeners channels s lastOnTick w
 		| what =: SR_EOM
 			# ((sChannel,rChannel, crecord), channels) = selectList (index - numl) channels
 			//Run onClose
-			# (r, w) = server.onClientClose crecord.Connection.state s w
+			# (r, w) = crecord.Connection.onClose crecord.Connection.state s w
 			= cont server listeners channels r lastOnTick
 				$ seq [closeChannel sChannel, closeRChannel rChannel] w
 		//Unknown or unused select codes
@@ -201,7 +201,7 @@ where
 		= send w xs (channels ++ [(sc,rc,p)])
 //Stop
 cont server [] [] response=:{globalState,stop=True} lastOnTick w
-	# (globalState, w) = server.onClose globalState w
+	# (globalState, w) = server.Server.onClose globalState w
 	= (Nothing, globalState, w)
 cont server listeners channels response=:{stop=True} lastOnTick w
 	# (listeners, lrecords) = unzip listeners

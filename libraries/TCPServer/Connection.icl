@@ -11,14 +11,7 @@ connect host port {ConnectionHandlers|onConnect,onData,onTick,onClose} s w
 	= serve
 	{ Server
 	| emptyServer
-	& onInit          = \s w    ->
-		({handlerResponse s & newConnection=[
-			{ Connection
-			| host     =host
-			, port     =port
-			, state    =""
-			, onConnect=onConnectH
-			, onError  = \e s w->(True, handlerResponse s, w)}]}, w)
+	& onInit          = onInit
 	, onTick          = \s w    ->
 		let (ms, r, w`) = onTick s w
 		in ({HandlerResponse | liftHandler r & sendData=map (tuple "") (maybeToList ms)}, w`)
@@ -33,6 +26,32 @@ where
 	onConnectH ci s w
 		# (ms, r, w) = onConnect s w
 		= (ms, ci, liftHandler r, w)
+
+	onInit s w =
+		(
+			{ handlerResponse s
+			& newConnection=
+				[
+					{ Connection
+					| host     =host
+					, port     =port
+					, state    =""
+					, onConnect=onConnectH
+					, onError  = \e s w->(True, handlerResponse s, w)
+					, onClose  = \c s w->
+						let (s`, w`) = onClose s w
+						in (
+								{ HandlerResponse
+								| handlerResponse s`
+								& stop=True
+								}
+							, w`
+							)
+					}
+				]
+			}
+		, w
+		)
 
 liftHandler :: !*(ConnectionResponse .st) -> *(HandlerResponse ci .st)
 liftHandler {ConnectionResponse | globalState,stop}
