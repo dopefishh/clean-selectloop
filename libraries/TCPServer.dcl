@@ -6,8 +6,6 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 
 from System.Time import :: Timespec
 
-:: OnDataFun ci st :== String ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
-
 /**
  * The server handlers
  *
@@ -52,6 +50,9 @@ from System.Time import :: Timespec
 	//* Stop
 	}
 
+/**
+ * Possible TCPServer errors
+ */
 :: TCPServerError
 	= ConnectionTimedOut
 	| ConnectionLookupError
@@ -59,23 +60,64 @@ from System.Time import :: Timespec
 	| ListenerUnableToOpen
 	| ListenerUnableToAnswer
 
+/**
+ * Listener object
+ *
+ * @var Client state
+ * @var Global state
+ */
 :: Listener ci st =
 	{ port      :: Int
+	//* Port of the listener
 	, onConnect :: String Int -> .(st -> *(*World -> *(Maybe String, Connection ci st, *(HandlerResponse ci st), !*World)))
-	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
+	//* Runs for every client that connects
 	, onClose   :: st -> *(*World -> *(*(HandlerResponse ci st), !*World))
+	//* Runs when the listener is closed again
+	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
+	//* Runs if an error occurred, if the flag is set, the server will lift the error to a global error
 	} 
+
+/**
+ * Creates a stub Connection object
+ *
+ * @param hostname
+ * @param port
+ * @param initial client state
+ * @result Connection
+ */
 emptyListener :: Int -> Listener ci .st
 
+/**
+ * Connection object
+ *
+ * @var Client state
+ * @var Global state
+ */
 :: Connection ci st =
 	{ host      :: String
+	//* Host of the connection
 	, port      :: Int
+	//* Port of the connection
 	, state     :: ci
+	//* Client state
 	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
-	, onClose   :: ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
+	//* Runs on connection
 	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+	//* Runs when data is received
+	, onClose   :: ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
+	//* Runs on close
 	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
+	//* Runs when the connection throws an error
 	}
+
+/**
+ * Creates a stub Connection object
+ *
+ * @param hostname
+ * @param port
+ * @param initial client state
+ * @result Connection
+ */
 emptyConnection :: String Int ci -> Connection ci .st
 
 /**

@@ -40,13 +40,31 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	, stop            :: Bool
 	}
 
+/***
+ * Connection object
+ *
+ * @var Client state
+ * @var Global state
+ */
 :: LConnection ci st =
 	{ state     :: ci
+	// Client state
 	, port      :: Int
+	// Port
 	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
+	// Runs when the client is connected
 	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
+	// Runs when data is received
 	, onClose   :: ci -> .(st -> *(*World -> *(*(ListenerResponse ci st), !*World)))
+	// Runs when the client is closed
 	}
+
+/**
+ * Creates a stub Connection
+ *
+ * @param initial state
+ * @result LConnection
+ */
 emptyLConnection :: ci -> LConnection ci .st
 
 /***
