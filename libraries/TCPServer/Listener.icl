@@ -5,7 +5,7 @@ import Data.Tuple
 import Data.Maybe
 import StdMisc
 
-emptyLConnection :: ci -> LConnection ci st
+emptyLConnection :: ci -> LConnection ci .st
 emptyLConnection st =
 	{ LConnection
 	| state = st

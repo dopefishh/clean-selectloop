@@ -11,7 +11,7 @@ import TCPIP
 import Data.Error
 import Data.List
 
-emptyListener :: Listener ci st
+emptyListener :: Listener ci .st
 emptyListener =
 	{ Listener
 	| port      = 0
@@ -20,7 +20,7 @@ emptyListener =
 	, onClose   = \s w->(handlerResponse s, w)
 	}
 
-emptyConnection :: ci -> Connection ci st
+emptyConnection :: ci -> Connection ci .st
 emptyConnection st =
 	{ host      = ""
 	, port      = 0
