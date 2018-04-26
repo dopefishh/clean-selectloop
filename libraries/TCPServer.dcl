@@ -65,7 +65,7 @@ from System.Time import :: Timespec
 	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
 	, onClose   :: st -> *(*World -> *(*(HandlerResponse ci st), !*World))
 	} 
-emptyListener :: Listener ci st
+emptyListener :: Listener ci .st
 
 :: Connection ci st =
 	{ host      :: String
@@ -76,7 +76,7 @@ emptyListener :: Listener ci st
 	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
 	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
 	}
-emptyConnection :: ci -> Connection ci st
+emptyConnection :: ci -> Connection ci .st
 
 /**
  * The serve function.
