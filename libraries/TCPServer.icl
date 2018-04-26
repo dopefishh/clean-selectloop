@@ -11,19 +11,19 @@ import TCPIP
 import Data.Error
 import Data.List
 
-emptyListener :: Listener ci .st
-emptyListener =
+emptyListener :: Int -> Listener ci .st
+emptyListener p =
 	{ Listener
-	| port      = 0
-	, onConnect = \h p s w->(Nothing, emptyConnection undef, handlerResponse s, w)
+	| port      = p
+	, onConnect = \h p s w->(Nothing, emptyConnection h p undef, handlerResponse s, w)
 	, onError   = \e s w->(True, handlerResponse s, w)
 	, onClose   = \s w->(handlerResponse s, w)
 	}
 
-emptyConnection :: ci -> Connection ci .st
-emptyConnection st =
-	{ host      = ""
-	, port      = 0
+emptyConnection :: String Int ci -> Connection ci .st
+emptyConnection h p st =
+	{ host      = h
+	, port      = p
 	, state     = st
 	, onConnect = \c s w->(Nothing, c, handlerResponse s, w)
 	, onClose   = \c s w->(handlerResponse s, w)
