@@ -32,7 +32,15 @@ listen port {ListenerHandlers|onInit,onConnect,onData,onTick,onClientClose,onClo
 where
 	onConnectH h p s w
 		# (md, ci, r, w) = onConnect h p s w
-		= (md, ci, liftHandler r, w)
+		= (md,
+			{ Connection
+			| host=h
+			, port=p
+			, state=ci
+			, onError=bail
+			, onConnect= \c s w->(Nothing, c, handlerResponse s, w)
+			}, liftHandler r, w)
+	bail e s w = (True, handlerResponse s, w)
 
 liftHandler {ListenerResponse|globalState,sendData,stop,closeConnection}
 	= {HandlerResponse|handlerResponse globalState & sendData=sendData, stop=stop,closeConnection=closeConnection}

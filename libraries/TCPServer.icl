@@ -98,14 +98,16 @@ loop server listeners channels s lastOnTick w
 			# ((lst, lrecord), listeners) = selectList index listeners
 			//Receive
 			# (tReport, mbNewMember, lst, w) = receive_MT (Just 0) lst w
-			| tReport <> TR_Success = abort "couldn't connect to new client"//loop lst channels s io w
+			| tReport <> TR_Success 
+				# (bail, r, w) = lrecord.Listener.onError ListenerUnableToAnswer s w
+				| bail = (Just "Unable to answer connected client", r.globalState, w)
+				= cont server listeners channels r lastOnTick w
 			# (ip,{rChannel,sChannel}) = fromJust mbNewMember
 			//Run onConnect
-			# (md, ci, r, w) = lrecord.Listener.onConnect (toString ip) lrecord.Listener.port s w
+			# (md, crecord, r, w) = lrecord.Listener.onConnect (toString ip) lrecord.Listener.port s w
 			//Maybe send
 			# (sChannel, w) = maybeSend server.sendTimeout md sChannel w
-			//TODO
-			# crecord = {Connection | state=ci, onError=undef, onConnect=undef, host=toString ip, port=lrecord.Listener.port}
+			# crecord = {crecord & host=(toString ip), port=lrecord.Listener.port} 
 			= cont server (listeners ++ [(lst, lrecord)]) (channels ++ [(sChannel,rChannel, crecord)]) r lastOnTick w
 		//Data from existing connection
 		| what =: SR_Available
@@ -162,7 +164,7 @@ cont server listeners channels response=:{newConnection=[crecord:cs],globalState
 	| tr =: TR_Expired = maybeBail` ConnectionTimedOut "Connection timed out" globalState w
 	| tr =: TR_NoSuccess = maybeBail` ConnectionUnableToOpen "Unable to open connection" globalState w
 	= case mc of
-		Nothing = (Just "Halp?", globalState, w)
+		Nothing = (Just "This shouldn't happen...", globalState, w)
 		Just {rChannel,sChannel}
 			# (md, ci, r, w) = crecord.Connection.onConnect crecord.Connection.state globalState w
 			# (sChannel, w) = maybeSend server.sendTimeout md sChannel w

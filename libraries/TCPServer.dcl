@@ -60,7 +60,7 @@ from System.Time import :: Timespec
 
 :: Listener ci st =
 	{ port      :: Int
-	, onConnect :: String Int -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+	, onConnect :: String Int -> .(st -> *(*World -> *(Maybe String, Connection ci st, *(HandlerResponse ci st), !*World)))
 	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
 	} 
 
@@ -69,6 +69,7 @@ from System.Time import :: Timespec
 	| ConnectionLookupError
 	| ConnectionUnableToOpen
 	| ListenerUnableToOpen
+	| ListenerUnableToAnswer
 
 :: Connection ci st =
 	{ host      :: String
