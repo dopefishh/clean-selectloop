@@ -47,7 +47,7 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
 	, onClose   :: ci -> .(st -> *(*World -> *(*(ListenerResponse ci st), !*World)))
 	}
-emptyLConnection :: ci -> LConnection ci st
+emptyLConnection :: ci -> LConnection ci .st
 
 /***
  * The listen function
