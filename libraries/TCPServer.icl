@@ -143,7 +143,7 @@ loop server listeners channels s lastOnTick w
 			//Run onClose
 			# (r, w) = crecord.Connection.onClose crecord.Connection.state s w
 			= cont server listeners channels r lastOnTick
-				$ seq [closeChannel sChannel, closeRChannel rChannel] w
+				$ closeChannel sChannel $ closeRChannel rChannel w
 		//Unknown or unused select codes
 		| what =: SR_Sendable
 			= (Just $ "SR_Sendable on " +++ toString index, s, w)
