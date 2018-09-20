@@ -174,7 +174,7 @@ cont server listeners channels response=:{newListener=[lst:ls],globalState} last
 		(_, Nothing, w) = maybeBail lst.Listener.onError lastOnTick channels listeners server ListenerUnableToOpen "Unable to open listener" globalState w
 		(_, Just l, w) = cont server (listeners ++ [(l, lst)]) channels {response & newListener=ls} lastOnTick w
 //Add connection
-cont server listeners channels response=:{newConnection=[crecord:cs],globalState,closeConnection,newListener,sendData,closeListener} lastOnTick w
+cont server listeners channels response=:{newConnection=[crecord:cs],globalState,closeConnection,newListener,sendData,closeListener,stop} lastOnTick w
 	# (mi, w) = lookupIPAddress crecord.Connection.host w
 	| isNothing mi = maybeBail` ConnectionLookupError "Unable to lookup ip address" globalState w
 	# (tr, mc, w) = connectTCP_MT server.connectTimeout (fromJust mi, crecord.Connection.port) w
@@ -185,29 +185,29 @@ cont server listeners channels response=:{newConnection=[crecord:cs],globalState
 		Just {rChannel,sChannel}
 			# (md, ci, r, w) = crecord.Connection.onConnect crecord.Connection.state globalState w
 			# (sChannel, w) = maybeSend server.sendTimeout md sChannel w
-			= cont server listeners (channels ++ [(sChannel,rChannel,{Connection | crecord & state=ci})]) (mergeR r newListener cs sendData closeListener closeConnection) lastOnTick w
+			= cont server listeners (channels ++ [(sChannel,rChannel,{Connection | crecord & state=ci})]) (mergeR r newListener cs sendData closeListener closeConnection stop) lastOnTick w
 where
 	maybeBail` = maybeBail crecord.Connection.onError lastOnTick channels listeners server 
-//Remove listener
-cont server listeners channels response=:{globalState,closeListener=[port:cs],newListener,newConnection,sendData,closeConnection} lastOnTick w
-	# (toClose, listeners) = selectListMultiple (\(l,lst)->(lst.Listener.port==port, (l, lst))) listeners
-	= case toClose of
-		[] = cont server listeners channels {response & closeListener=cs} lastOnTick w
-		[(l,p):xs]
-			# (r, w) = p.Listener.onClose globalState w
-			= cont server listeners channels (mergeR r newListener newConnection sendData [port:cs] closeConnection) lastOnTick
-				$ closeRChannel l w
 //Remove channel
-cont server listeners channels response=:{globalState,closeConnection=[ci:cs],newListener,newConnection,sendData,closeListener} lastOnTick w
+cont server listeners channels response=:{globalState,closeConnection=[ci:cs],newListener,newConnection,sendData,closeListener,stop} lastOnTick w
 	# (toClose, channels) = selectListMultiple
 		(\(s,r,crecord)->(crecord.Connection.state == ci, (s,r,crecord))) channels
 	= case toClose of
 		[] = cont server listeners channels {response & closeConnection=cs} lastOnTick w
 		[(sc, rc, crecord):xs]
 			# (r, w) = crecord.Connection.onClose crecord.Connection.state globalState w
-			= cont server listeners channels (mergeR r newListener newConnection sendData closeListener [ci:cs]) lastOnTick
+			= cont server listeners channels (mergeR r newListener newConnection sendData closeListener [ci:cs] stop) lastOnTick
 				$ closeChannel sc
 				$ closeRChannel rc w
+//Remove listener
+cont server listeners channels response=:{globalState,closeListener=[port:cs],newListener,newConnection,sendData,closeConnection,stop} lastOnTick w
+	# (toClose, listeners) = selectListMultiple (\(l,lst)->(lst.Listener.port==port, (l, lst))) listeners
+	= case toClose of
+		[] = cont server listeners channels {response & closeListener=cs} lastOnTick w
+		[(l,p):xs]
+			# (r, w) = p.Listener.onClose globalState w
+			= cont server listeners channels (mergeR r newListener newConnection sendData [port:cs] closeConnection stop) lastOnTick
+				$ closeRChannel l w
 //Send data
 cont server listeners channels response=:{sendData=[(ci, data):ds]} lastOnTick w
 	= uncurry (send w) $ selectListMultiple (\(s,r,p)->(p.Connection.state==ci, (s,r,p))) channels
@@ -225,9 +225,20 @@ cont server listeners channels response=:{stop=True} lastOnTick w
 	# listeners = zip2 listeners lrecords
 	# (schannels, rchannels, crecords) = unzip3 channels
 	# channels = zip3 schannels rchannels crecords
-	= cont server listeners channels {response & closeConnection=map (\c->c.Connection.state) crecords, closeListener=map (\l->l.Listener.port) lrecords} lastOnTick w
+	= cont server listeners channels
+		{ response
+		& closeConnection=map (\c->c.Connection.state) crecords
+		, closeListener=map (\l->l.Listener.port) lrecords
+		} lastOnTick w
 //Nothing to do
 cont server listeners channels {globalState} lastOnTick w
 	= loop server listeners channels globalState lastOnTick w
 
-mergeR r nl nc sd cl cc = {r & newListener=nl, newConnection=nc, sendData=sd, closeListener=cl, closeConnection=cc}
+mergeR r nl nc sd cl cc stop = {r & newListener=nl, newConnection=nc, sendData=sd, closeListener=cl, closeConnection=cc, stop=stop || r.stop}
+
+ulen [] = (0, [])
+ulen [x:xs]
+	# (l, xs) = ulen xs
+	= (l+1, [x:xs])
+
+import StdDebug
