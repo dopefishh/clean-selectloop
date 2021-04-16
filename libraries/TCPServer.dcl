@@ -1,10 +1,7 @@
 definition module TCPServer
 
 from StdOverloaded import class ==
-from StdMaybe import :: Maybe
 from Data.Error import :: MaybeError, :: MaybeErrorString
-
-from System.Time import :: Timespec
 
 /**
  * The server handlers
@@ -13,17 +10,17 @@ from System.Time import :: Timespec
  * @var Global state
  */
 :: Server ci st =
-	{ idleTimeout     :: Maybe Int
+	{ idleTimeout     :: ? Int
 	//* Time between ticks when nothing happens in ms
-	, sendTimeout     :: Maybe Int
+	, sendTimeout     :: ? Int
 	//* Send timeout in ms
-	, connectTimeout  :: Maybe Int
+	, connectTimeout  :: ? Int
 	//* Connect timeout in ms
-	, onInit          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
+	, onInit          ::                    st -> *(*World -> *(*(HandlerResponse ci st), *World))
 	//* Runs initially
-	, onTick          ::                    st -> *(*World -> *(*(HandlerResponse ci st), !*World))
+	, onTick          ::                    st -> *(*World -> *(*(HandlerResponse ci st), *World))
 	//* Runs when the select timer times out
-	, onClose         ::                    st -> *(*World -> *(st, !*World))
+	, onClose         ::                    st -> *(*World -> *(st, *World))
 	//* Runs when you close
 	}
 
@@ -69,11 +66,11 @@ from System.Time import :: Timespec
 :: Listener ci st =
 	{ port      :: Int
 	//* Port of the listener
-	, onConnect :: String Int -> .(st -> *(*World -> *(Maybe String, Connection ci st, *(HandlerResponse ci st), !*World)))
+	, onConnect :: String Int -> .(st -> *(*World -> *(? String, Connection ci st, *(HandlerResponse ci st), *World)))
 	//* Runs for every client that connects
-	, onClose   :: st -> *(*World -> *(*(HandlerResponse ci st), !*World))
+	, onClose   :: st -> *(*World -> *(*(HandlerResponse ci st), *World))
 	//* Runs when the listener is closed again
-	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
+	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), *World)))
 	//* Runs if an error occurred, if the flag is set, the server will lift the error to a global error
 	} 
 
@@ -100,13 +97,13 @@ emptyListener :: Int -> Listener ci .st
 	//* Port of the connection
 	, state     :: ci
 	//* Client state
-	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+	, onConnect :: ci -> .(st -> *(*World -> *(? String, ci, *(HandlerResponse ci st), *World)))
 	//* Runs on connection
-	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(HandlerResponse ci st), !*World)))
+	, onData    :: String ci -> .(st -> *(*World -> *(? String, ci, *(HandlerResponse ci st), *World)))
 	//* Runs when data is received
-	, onClose   :: ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), !*World)))
+	, onClose   :: ci -> .(st -> *(*World -> *(*(HandlerResponse ci st), *World)))
 	//* Runs on close
-	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), !*World)))
+	, onError   :: TCPServerError -> .(st -> *(*World -> *(Bool, *(HandlerResponse ci st), *World)))
 	//* Runs when the connection throws an error
 	}
 
@@ -129,9 +126,9 @@ emptyConnection :: String Int ci -> Connection ci .st
  * @param Handlers
  * @param Initial state
  * @param World
- * @result Maybe an error message, the state and the world
+ * @result ? an error message, the state and the world
  */
-serve :: (Server ci .st) .st !*World -> *(Maybe String, !.st, !*World) | == ci
+serve :: (Server ci .st) .st !*World -> *(? String, !.st, !*World) | == ci
 
 /**
  * Create a HandlerResponse from a given state

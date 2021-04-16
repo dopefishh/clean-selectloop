@@ -1,12 +1,12 @@
 implementation module TCPServer.Connection
 
-import StdEnv
-import TCPServer
 import Data.Maybe
 import Data.Tuple
-import Data.Error
+import StdEnv
 
-connect :: String Int (ConnectionHandlers .st) .st !*World -> *(Maybe String, .st, !*World)
+import TCPServer
+
+connect :: String Int (ConnectionHandlers .st) .st !*World -> *(? String, .st, !*World)
 connect host port {ConnectionHandlers|onConnect,onData,onTick,onClose} s w
 	= serve
 	{ Server
@@ -64,8 +64,8 @@ emptyConnection
 	| idleTimeout   = idleTimeout
 	, sendTimeout   = sendTimeout
 	, connectTimeout= connectTimeout
-	, onConnect     = \s w = (Nothing, connectionResponse s, w)
-	, onData        = \_ s w = (Nothing, connectionResponse s, w)
-	, onTick        = \s w = (Nothing, connectionResponse s, w)
+	, onConnect     = \s w = (?None, connectionResponse s, w)
+	, onData        = \_ s w = (?None, connectionResponse s, w)
+	, onTick        = \s w = (?None, connectionResponse s, w)
 	, onClose       = tuple
 	}

@@ -21,8 +21,8 @@ Start w
 # ([argv0:args], w) = getCommandLine w
 | args =: [] || args =: [_,_:_] = die ("usage: " +++ argv0 +++ " URL\n") w
 = case parseURI (hd args) of
-	Nothing = die "Unable to parse URI" w
-	Just uri = case httpRequestFollowRedirects
+	?None = die "Unable to parse URI" w
+	?Just uri = case httpRequestFollowRedirects
 			{ newHTTPRequest
 			& server_name = fromMaybe ""  uri.uriRegName
 			, server_port = fromMaybe 80  uri.uriPort

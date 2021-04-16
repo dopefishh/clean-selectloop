@@ -1,6 +1,5 @@
 definition module TCPServer.Connection
 
-from Data.Maybe import :: Maybe
 from Data.Error import :: MaybeError, :: MaybeErrorString
 
 /***
@@ -9,19 +8,19 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
  * @var State
  */
 :: ConnectionHandlers st =
-	{ idleTimeout     :: Maybe Int
+	{ idleTimeout     :: ? Int
 	//* Time between ticks when nothing happens in ms
-	, sendTimeout     :: Maybe Int
+	, sendTimeout     :: ? Int
 	//* Send timeout in ms
-	, connectTimeout  :: Maybe Int
+	, connectTimeout  :: ? Int
 	//* Connect timeout in ms
-	, onConnect       ::             st -> *(*World -> *(Maybe String, *(ConnectionResponse st), !*World))
+	, onConnect       ::             st -> *(*World -> *(? String, *(ConnectionResponse st), *World))
 	//* Runs after the connection has been established
-	, onData          :: String -> .(st -> *(*World -> *(Maybe String, *(ConnectionResponse st), !*World)))
+	, onData          :: String -> .(st -> *(*World -> *(? String, *(ConnectionResponse st), *World)))
 	//* Runs when there is data
-	, onTick          ::             st -> *(*World -> *(Maybe String, *(ConnectionResponse st), !*World))
+	, onTick          ::             st -> *(*World -> *(? String, *(ConnectionResponse st), *World))
 	//* Runs when the select timer times out
-	, onClose         ::             st -> *(*World -> *(st, !*World))
+	, onClose         ::             st -> *(*World -> *(st, *World))
 	//* Runs when you close
 	}
 
@@ -47,9 +46,9 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
  * @param Handlers
  * @param Initial state
  * @param World
- * @result Maybe an error message, the state and the world
+ * @result ? an error message, the state and the world
  */
-connect :: String Int (ConnectionHandlers .st) .st !*World -> *(Maybe String, .st, !*World)
+connect :: String Int (ConnectionHandlers .st) .st !*World -> *(? String, .st, !*World)
 
 /***
  * Create a ConnectionResponse form a given state

@@ -1,21 +1,19 @@
 implementation module TCPServer
 
-import System._Pointer
+import Data.Error
 import Data.Func
-import StdEnv
-
+import Data.List
 import Data.Maybe
 import Data.Tuple
+import StdEnv
 import System.Time
 import TCPIP
-import Data.Error
-import Data.List
 
 emptyListener :: Int -> Listener ci .st
 emptyListener p =
 	{ Listener
 	| port      = p
-	, onConnect = \h p s w->(Nothing, emptyConnection h p undef, handlerResponse s, w)
+	, onConnect = \h p s w->(?None, emptyConnection h p undef, handlerResponse s, w)
 	, onError   = \e s w->(True, handlerResponse s, w)
 	, onClose   = \s w->(handlerResponse s, w)
 	}
@@ -25,9 +23,9 @@ emptyConnection h p st =
 	{ host      = h
 	, port      = p
 	, state     = st
-	, onConnect = \c s w->(Nothing, c, handlerResponse s, w)
+	, onConnect = \c s w->(?None, c, handlerResponse s, w)
 	, onClose   = \c s w->(handlerResponse s, w)
-	, onData    = \d c s w->(Nothing, c, handlerResponse s, w)
+	, onData    = \d c s w->(?None, c, handlerResponse s, w)
 	, onError   = \e s w->(True, handlerResponse s, w)
 	}
 
@@ -42,9 +40,9 @@ handlerResponse s =
 emptyServer :: Server ci .st
 emptyServer =
 	{ Server
-	| idleTimeout     = Just 1000
-	, sendTimeout     = Nothing
-	, connectTimeout  = Nothing
+	| idleTimeout     = ?Just 1000
+	, sendTimeout     = ?None
+	, connectTimeout  = ?None
 	, onInit          = \s w->(handlerResponse s, w)
 	, onTick          = \s w->(handlerResponse s, w)
 	, onClose         = \s w->(s, w)
@@ -69,7 +67,7 @@ usleep t w = code {
 		ccall usleep "I:I:A"
 	}
 
-serve :: (Server ci .st) .st !*World -> *(Maybe String, !.st, !*World) | == ci
+serve :: (Server ci .st) .st !*World -> *(? String, !.st, !*World) | == ci
 serve server s w
 # (r, w) = server.onInit s w
 = cont server [] [] r 0 w
@@ -86,7 +84,7 @@ loop :: (Server ci .st)
 	.st
 	Int
 	!*World
-	-> (.(Maybe {#Char}),.st,!.World) | == ci
+	-> (.(? {#Char}),.st,!.World) | == ci
 loop server listeners channels s lastOnTick w
 # (ts, w) = appFst tous $ nsTime w
 //Do the select
@@ -98,12 +96,12 @@ loop server listeners channels s lastOnTick w
 # (selectSet, TCP_Pair (TCP_Listeners listeners) (TCP_RChannels rChans), _, w)
 	= if (numl + numc == 0)
 		([], TCP_Pair (TCP_Listeners []) (TCP_RChannels []), TCP_Void, snd $ usleep timeoutus w)
-		(selectChannel_MT (Just (timeoutus/1000)) (TCP_Pair listeners channels) TCP_Void w)
+		(selectChannel_MT (?Just (timeoutus/1000)) (TCP_Pair listeners channels) TCP_Void w)
 # channels = zip3 sChans rChans crecords
 # listeners = zip2 listeners lrecords
 //See what time it is now, if nothing happened we sleep some more after the tick
 = case selectSet of
-	//Nothing
+	//?None
 	[] //See wether the last tick was passed
 		# (r, w) = server.onTick s w
 		# (ts, w) = appFst tous $ nsTime w
@@ -114,10 +112,10 @@ loop server listeners channels s lastOnTick w
 			//Select
 			# ((lst, lrecord), listeners) = selectList index listeners
 			//Receive
-			# (tReport, mbNewMember, lst, w) = receive_MT (Just 0) lst w
+			# (tReport, mbNewMember, lst, w) = receive_MT (?Just 0) lst w
 			| tReport <> TR_Success 
 				# (bail, r, w) = lrecord.Listener.onError ListenerUnableToAnswer s w
-				| bail = (Just "Unable to answer connected client", r.globalState, w)
+				| bail = (?Just "Unable to answer connected client", r.globalState, w)
 				= cont server listeners channels r lastOnTick w
 			# (ip,{rChannel,sChannel}) = fromJust mbNewMember
 			//Run onConnect
@@ -146,13 +144,13 @@ loop server listeners channels s lastOnTick w
 				$ closeChannel sChannel $ closeRChannel rChannel w
 		//Unknown or unused select codes
 		| what =: SR_Sendable
-			= (Just $ "SR_Sendable on " +++ toString index, s, w)
+			= (?Just $ "SR_Sendable on " +++ toString index, s, w)
 		| what =: SR_Disconnected
-			= (Just $ "SR_Disconnected on " +++ toString index, s, w)
-			= (Just $ "Unknown select code: " +++ toString what +++ " on " +++ toString index, s, w)
+			= (?Just $ "SR_Disconnected on " +++ toString index, s, w)
+			= (?Just $ "Unknown select code: " +++ toString what +++ " on " +++ toString index, s, w)
 
-maybeSend _ Nothing sC w = (sC, w)
-maybeSend to (Just d) sC w
+maybeSend _ ?None sC w = (sC, w)
+maybeSend to (?Just d) sC w
 	# (tr, i, sC, w) = send_MT to (toByteSeq d) sC w
 	= (sC, w)
 
@@ -165,24 +163,24 @@ seqListError [x:xs] s = case x s of
 
 maybeBail eh lastOnTick channels listeners server e es s w
 	# (bail, r, w) = eh e s w
-	| bail = (Just es, r.globalState, w)
+	| bail = (?Just es, r.globalState, w)
 	= cont server listeners channels r lastOnTick w
 
 //Add listener
 cont server listeners channels response=:{newListener=[lst:ls],globalState} lastOnTick w
 	= case openTCP_Listener lst.Listener.port w of
-		(_, Nothing, w) = maybeBail lst.Listener.onError lastOnTick channels listeners server ListenerUnableToOpen "Unable to open listener" globalState w
-		(_, Just l, w) = cont server (listeners ++ [(l, lst)]) channels {response & newListener=ls} lastOnTick w
+		(_, ?None, w) = maybeBail lst.Listener.onError lastOnTick channels listeners server ListenerUnableToOpen "Unable to open listener" globalState w
+		(_, ?Just l, w) = cont server (listeners ++ [(l, lst)]) channels {response & newListener=ls} lastOnTick w
 //Add connection
 cont server listeners channels response=:{newConnection=[crecord:cs],globalState,closeConnection,newListener,sendData,closeListener,stop} lastOnTick w
 	# (mi, w) = lookupIPAddress crecord.Connection.host w
-	| isNothing mi = maybeBail` ConnectionLookupError "Unable to lookup ip address" globalState w
+	| isNone mi = maybeBail` ConnectionLookupError "Unable to lookup ip address" globalState w
 	# (tr, mc, w) = connectTCP_MT server.connectTimeout (fromJust mi, crecord.Connection.port) w
 	| tr =: TR_Expired = maybeBail` ConnectionTimedOut "Connection timed out" globalState w
 	| tr =: TR_NoSuccess = maybeBail` ConnectionUnableToOpen "Unable to open connection" globalState w
 	= case mc of
-		Nothing = (Just "This shouldn't happen...", globalState, w)
-		Just {rChannel,sChannel}
+		?None = (?Just "This shouldn't happen...", globalState, w)
+		?Just {rChannel,sChannel}
 			# (md, ci, r, w) = crecord.Connection.onConnect crecord.Connection.state globalState w
 			# (sChannel, w) = maybeSend server.sendTimeout md sChannel w
 			= cont server listeners (channels ++ [(sChannel,rChannel,{Connection | crecord & state=ci})]) (mergeR r newListener cs sendData closeListener closeConnection stop) lastOnTick w
@@ -214,12 +212,12 @@ cont server listeners channels response=:{sendData=[(ci, data):ds]} lastOnTick w
 where
 	send w [] channels = cont server listeners channels {response & sendData=ds} lastOnTick w
 	send w [(sc,rc,p):xs] channels
-		# (sc, w) = maybeSend server.sendTimeout (Just data) sc w
+		# (sc, w) = maybeSend server.sendTimeout (?Just data) sc w
 		= send w xs (channels ++ [(sc,rc,p)])
 //Stop
 cont server [] [] response=:{globalState,stop=True} lastOnTick w
 	# (globalState, w) = server.Server.onClose globalState w
-	= (Nothing, globalState, w)
+	= (?None, globalState, w)
 cont server listeners channels response=:{stop=True} lastOnTick w
 	# (listeners, lrecords) = unzip listeners
 	# listeners = zip2 listeners lrecords
@@ -230,7 +228,7 @@ cont server listeners channels response=:{stop=True} lastOnTick w
 		& closeConnection=map (\c->c.Connection.state) crecords
 		, closeListener=map (\l->l.Listener.port) lrecords
 		} lastOnTick w
-//Nothing to do
+//?None to do
 cont server listeners channels {globalState} lastOnTick w
 	= loop server listeners channels globalState lastOnTick w
 
@@ -240,5 +238,3 @@ ulen [] = (0, [])
 ulen [x:xs]
 	# (l, xs) = ulen xs
 	= (l+1, [x:xs])
-
-import StdDebug

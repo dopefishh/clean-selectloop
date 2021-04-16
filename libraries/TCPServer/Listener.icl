@@ -1,21 +1,21 @@
 implementation module TCPServer.Listener
 
-import TCPServer
 import Data.Tuple
-import Data.Maybe
-import StdMisc
+import StdEnv
+
+import TCPServer
 
 emptyLConnection :: ci -> LConnection ci .st
 emptyLConnection st =
 	{ LConnection
 	| state = st
 	, port  = 0
-	, onConnect = \c s w->(Nothing, c, listenerResponse s, w)
-	, onData    = \d c s w->(Nothing, c, listenerResponse s, w)
+	, onConnect = \c s w->(?None, c, listenerResponse s, w)
+	, onData    = \d c s w->(?None, c, listenerResponse s, w)
 	, onClose   = \c s w->(listenerResponse s, w)
 	}
 
-listen :: Int (ListenerHandlers ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
+listen :: Int (ListenerHandlers ci .st) .st !*World -> *(? String, .st, !*World) | == ci
 listen port {ListenerHandlers|onInit,onConnect,onTick,onClose} s w
 	= serve
 	{ Server
@@ -69,7 +69,7 @@ emptyListener
 	, sendTimeout   = sendTimeout
 	, connectTimeout= connectTimeout
 	, onInit        = \    s w->(listenerResponse s, w)
-	, onConnect     = \_ _ s w->(Nothing, undef, listenerResponse s, w)
+	, onConnect     = \_ _ s w->(?None, undef, listenerResponse s, w)
 	, onTick        = \    s w->(listenerResponse s, w)
 	, onClose       = tuple
 	}

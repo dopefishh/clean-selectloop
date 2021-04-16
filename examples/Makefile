@@ -7,7 +7,7 @@ all: $(binaries)
 prj: $(addsuffix .prj,$(binaries))
 
 %: %.icl
-	clm -IL Platform -IL TCPIP -IL Platform/Deprecated/StdLib -I ../libraries -h 200m -s 200m $@ -o $@
+	clm -IL Platform -IL TCPIP -IL Platform/Deprecated/StdLib -I ../libraries -h 200m -s 200m -tst -pt $@ -o $@
 
 %.prj:
 	cpm project $(basename $@) create

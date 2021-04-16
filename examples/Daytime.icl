@@ -14,6 +14,6 @@ Start w
 	| emptyListener
 	& onConnect     = \h p   s w->
 		let (t, w`) = time w
-		in (Just (toString t +++ "\n"), emptyLConnection 1, listenerResponse s, w`)
+		in (?Just (toString t +++ "\n"), emptyLConnection 1, listenerResponse s, w`)
 	} io w
 = fclose io w

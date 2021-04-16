@@ -1,7 +1,6 @@
 definition module TCPServer.Listener
 
 from StdOverloaded import class ==
-from Data.Maybe import :: Maybe
 from Data.Error import :: MaybeError, :: MaybeErrorString
 
 /***
@@ -11,19 +10,19 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
  * @var Global state
  */
 :: ListenerHandlers ci st =
-	{ idleTimeout     :: Maybe Int
+	{ idleTimeout     :: ? Int
 	//* Time between ticks when nothing happens in ms
-	, sendTimeout     :: Maybe Int
+	, sendTimeout     :: ? Int
 	//* Send timeout in ms
-	, connectTimeout  :: Maybe Int
+	, connectTimeout  :: ? Int
 	//* Connect timeout in ms
-	, onInit          ::                    st -> *(*World -> *(                  *(ListenerResponse ci st), !*World))
+	, onInit          ::                    st -> *(*World -> *(                  *(ListenerResponse ci st), *World))
 	//* Runs initially
-	, onConnect       :: String Int    -> .(st -> *(*World -> *(Maybe String, LConnection ci st, *(ListenerResponse ci st), !*World)))
+	, onConnect       :: String Int    -> .(st -> *(*World -> *(? String, LConnection ci st, *(ListenerResponse ci st), *World)))
 	//* Runs when there is data from one of the clients
-	, onTick          ::                    st -> *(*World -> *(                  *(ListenerResponse ci st), !*World))
+	, onTick          ::                    st -> *(*World -> *(                  *(ListenerResponse ci st), *World))
 	//* Runs when the select timer times out
-	, onClose         ::                    st -> *(*World -> *(st, !*World))
+	, onClose         ::                    st -> *(*World -> *(st, *World))
 	//* Runs when you close
 	}
 
@@ -51,11 +50,11 @@ from Data.Error import :: MaybeError, :: MaybeErrorString
 	// Client state
 	, port      :: Int
 	// Port
-	, onConnect :: ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
+	, onConnect :: ci -> .(st -> *(*World -> *(? String, ci, *(ListenerResponse ci st), *World)))
 	// Runs when the client is connected
-	, onData    :: String ci -> .(st -> *(*World -> *(Maybe String, ci, *(ListenerResponse ci st), !*World)))
+	, onData    :: String ci -> .(st -> *(*World -> *(? String, ci, *(ListenerResponse ci st), *World)))
 	// Runs when data is received
-	, onClose   :: ci -> .(st -> *(*World -> *(*(ListenerResponse ci st), !*World)))
+	, onClose   :: ci -> .(st -> *(*World -> *(*(ListenerResponse ci st), *World)))
 	// Runs when the client is closed
 	}
 
@@ -76,9 +75,9 @@ emptyLConnection :: ci -> LConnection ci .st
  * @param Handlers
  * @param Initial state
  * @param World
- * @result Maybe an error message, the state and the world
+ * @result ? an error message, the state and the world
  */
-listen :: Int (ListenerHandlers ci .st) .st !*World -> *(Maybe String, .st, !*World) | == ci
+listen :: Int (ListenerHandlers ci .st) .st !*World -> *(? String, .st, !*World) | == ci
 
 /***
  * Create a ListenerResponse from a given state
